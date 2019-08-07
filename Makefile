@@ -25,6 +25,11 @@ requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
+## Download raw data
+download:
+	rm -rf data/raw/*
+	$(PYTHON_INTERPRETER) src/data/download.py http://files.fast.ai/part2/lesson14/rossmann.tgz data/raw
+
 ## Make Dataset
 data: requirements
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
