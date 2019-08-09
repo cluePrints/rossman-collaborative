@@ -81,6 +81,10 @@ endif
 test_environment:
 	$(PYTHON_INTERPRETER) test_environment.py
 
+## Launch Jupyter locally
+notebook:
+	cd notebooks && jupyter notebook
+
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
