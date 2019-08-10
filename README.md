@@ -1,6 +1,8 @@
 rossman-collaborative
 ==============================
 
+Join our [Discord chat](https://discord.gg/7xcSgH)
+
 A short description of the project.
 
 Project Organization
