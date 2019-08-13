@@ -1,5 +1,10 @@
-rossman-collaborative
-==============================
+# rossman-collaborative
+
+## Quick start
+
+    make download
+    make data
+    make notebook
 
 Join our [Discord chat](https://discord.gg/7xcSgH)
 
