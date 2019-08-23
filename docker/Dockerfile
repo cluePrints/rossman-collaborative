@@ -2,9 +2,10 @@ FROM ubuntu:16.04
 
 RUN apt-get update && apt-get install -y \
   git \
-  python3.5 \
+  python3.7 \
   python3-pip \
-  python3-dev
+  python3-dev \
+  libomp-dev     # xgboost dep
 
 RUN pip3 install --upgrade pip
 
