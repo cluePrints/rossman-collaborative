@@ -1,64 +1,79 @@
 # rossman-collaborative
 
-## Quick start
+Please Input a short description
 
-    make download
-    make data
-    make notebook
+## Requirements
 
-Join our [Discord chat](https://discord.gg/7xcSgH)
+* [Docker version 17 or later](https://docs.docker.com/install/#support)
 
-A short description of the project.
+## Setup development environment
 
-Project Organization
-------------
+We setup the development environment in a Docker container with the following command.
 
-    ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
+- `make init`
 
+This command gets the resources for training and testing, and then prepares the Docker image for the experiments.
+After creating the Docker image, you run the following command.
 
---------
+- `make create-container`
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+The above command creates a Docker container from the Docker image which we create with `make init`, and then
+login to the Docker container. Now we made the development environment. For create and evaluate the model,
+you run the following command.
+
+## Development with Docker container
+
+This section shows how we develop with the created Docker container.
+
+### Edit source code
+
+Most of the source codes of this project, `rossman-collaborative` are stored in the `rossman_collaborative` directory.
+Generated Docker container mounts the project directory to ``/work`` of the container and therefore
+when you can edit the files in the host environment with your favorite editor
+such as Vim, Emacs, Atom or PyCharm. The changes in host environment are reflected in the Docker container environment.
+
+### Update dependencies
+
+When we need to add libraries in `Dockerfile` or `requirements.txt`
+which are added to working environment in the Docker container, we need to drop the current Docker container and
+image, and then create them again with the latest setting. To remove the Docker the container and image, run `make clean-docker`
+and then `make init-docker` command to create the Docker container with the latest setting.
+
+### Login Docker container
+
+Only the first time you need to create a Docker container, from the image created in `make init` command.
+`make create-container` creates and launch the rossman_collaborative container.
+After creating the container, you just need run `make start-container`.
+
+### Logout from Docker container
+
+When you logout from shell in Docker container, please run `exit` in the console.
+
+### Run linter
+
+When you check the code quality, please run `make lint`
+
+### Run test
+
+When you run test in `tests` directory, please run `make test`
+
+### Sync data source to local data directory
+
+When you want to download data in remote data sources such as Amazon S3 or NFS, `sync-from-remote` target downloads them.
+
+### Sync local data to remote source
+
+When you modify the data in local environment, `sync-to-remote` target uploads the local files stored in `data` to specified data sources such as S3 or NFS directories.
+
+### Show profile of Docker container
+
+When you see the status of Docker container, please run `make profile` in host machine.
+
+### Use Jupyter Notebook
+
+To launch Jupyter Notebook, please run `make jupyter` in the Docker container. After launch the Jupyter Notebook, you can
+access the Jupyter Notebook service in http://localhost:8888.
+
+# Credits
+
+This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [cookiecutter-docker-science](https://docker-science.github.io/) project template.

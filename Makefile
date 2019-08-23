@@ -1,153 +1,135 @@
-.PHONY: clean data lint requirements sync_data_to_s3 sync_data_from_s3
-
-#################################################################################
-# GLOBALS                                                                       #
-#################################################################################
-
-PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUCKET = [OPTIONAL] your-bucket-for-syncing-data (do not include 's3://')
-PROFILE = default
-PROJECT_NAME = rossman-collaborative
-PYTHON_INTERPRETER = python3
-
-ifeq (,$(shell which conda))
-HAS_CONDA=False
-else
-HAS_CONDA=True
-endif
-
-#################################################################################
-# COMMANDS                                                                      #
-#################################################################################
-
-## Install Python Dependencies
-requirements: test_environment
-	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
-	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
-
-## Download raw data
-download:
-	rm -rf data/raw/*
-	$(PYTHON_INTERPRETER) src/data/download.py http://files.fast.ai/part2/lesson14/rossmann.tgz data/raw
-
-## Make Dataset
-data: requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
-
-## Delete all compiled Python files
-clean:
-	find . -type f -name "*.py[co]" -delete
-	find . -type d -name "__pycache__" -delete
-
-## Lint using flake8
-lint:
-	flake8 src
-
-## Upload Data to S3
-sync_data_to_s3:
-ifeq (default,$(PROFILE))
-	aws s3 sync data/ s3://$(BUCKET)/data/
-else
-	aws s3 sync data/ s3://$(BUCKET)/data/ --profile $(PROFILE)
-endif
-
-## Download Data from S3
-sync_data_from_s3:
-ifeq (default,$(PROFILE))
-	aws s3 sync s3://$(BUCKET)/data/ data/
-else
-	aws s3 sync s3://$(BUCKET)/data/ data/ --profile $(PROFILE)
-endif
-
-## Set up python interpreter environment
-create_environment:
-ifeq (True,$(HAS_CONDA))
-		@echo ">>> Detected conda, creating conda environment."
-ifeq (3,$(findstring 3,$(PYTHON_INTERPRETER)))
-	conda create --name $(PROJECT_NAME) python=3
-else
-	conda create --name $(PROJECT_NAME) python=2.7
-endif
-		@echo ">>> New conda env created. Activate with:\nsource activate $(PROJECT_NAME)"
-else
-	$(PYTHON_INTERPRETER) -m pip install -q virtualenv virtualenvwrapper
-	@echo ">>> Installing virtualenvwrapper if not already intalled.\nMake sure the following lines are in shell startup file\n\
-	export WORKON_HOME=$$HOME/.virtualenvs\nexport PROJECT_HOME=$$HOME/Devel\nsource /usr/local/bin/virtualenvwrapper.sh\n"
-	@bash -c "source `which virtualenvwrapper.sh`;mkvirtualenv $(PROJECT_NAME) --python=$(PYTHON_INTERPRETER)"
-	@echo ">>> New virtualenv created. Activate with:\nworkon $(PROJECT_NAME)"
-endif
-
-## Test python environment is setup correctly
-test_environment:
-	$(PYTHON_INTERPRETER) test_environment.py
-
-## Launch Jupyter locally
-notebook:
-	cd notebooks && jupyter notebook
-
-#################################################################################
-# PROJECT RULES                                                                 #
-#################################################################################
-
-
-
-#################################################################################
-# Self Documenting Commands                                                     #
-#################################################################################
-
+.PHONY: clean clean-model clean-pyc docs help init init-docker create-container start-container jupyter test lint profile clean clean-data clean-docker clean-container clean-image sync-from-source sync-to-source
 .DEFAULT_GOAL := help
 
-# Inspired by <http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html>
-# sed script explained:
-# /^##/:
-# 	* save line in hold space
-# 	* purge line
-# 	* Loop:
-# 		* append newline + line to hold space
-# 		* go to next line
-# 		* if line starts with doc comment, strip comment character off and loop
-# 	* remove target prerequisites
-# 	* append hold space (+ newline) to line
-# 	* replace newline plus comments by `---`
-# 	* print line
-# Separate expressions are necessary because labels cannot be delimited by
-# semicolon; see <http://stackoverflow.com/a/11799865/1968>
-.PHONY: help
-help:
-	@echo "$$(tput bold)Available rules:$$(tput sgr0)"
-	@echo
-	@sed -n -e "/^## / { \
-		h; \
-		s/.*//; \
-		:doc" \
-		-e "H; \
-		n; \
-		s/^## //; \
-		t doc" \
-		-e "s/:.*//; \
-		G; \
-		s/\\n## /---/; \
-		s/\\n/ /g; \
-		p; \
-	}" ${MAKEFILE_LIST} \
-	| LC_ALL='C' sort --ignore-case \
-	| awk -F '---' \
-		-v ncol=$$(tput cols) \
-		-v indent=19 \
-		-v col_on="$$(tput setaf 6)" \
-		-v col_off="$$(tput sgr0)" \
-	'{ \
-		printf "%s%*s%s ", col_on, -indent, $$1, col_off; \
-		n = split($$2, words, " "); \
-		line_length = ncol - indent; \
-		for (i = 1; i <= n; i++) { \
-			line_length -= length(words[i]) + 1; \
-			if (line_length <= 0) { \
-				line_length = ncol - indent - length(words[i]) - 1; \
-				printf "\n%*s ", -indent, " "; \
-			} \
-			printf "%s ", words[i]; \
-		} \
-		printf "\n"; \
-	}' \
-	| more $(shell test $(shell uname) = Darwin && echo '--no-init --raw-control-chars')
+###########################################################################################################
+## SCRIPTS
+###########################################################################################################
+
+define PRINT_HELP_PYSCRIPT
+import os, re, sys
+
+if os.environ['TARGET']:
+    target = os.environ['TARGET']
+    is_in_target = False
+    for line in sys.stdin:
+        match = re.match(r'^(?P<target>{}):(?P<dependencies>.*)?## (?P<description>.*)$$'.format(target).format(target), line)
+        if match:
+            print("target: %-20s" % (match.group("target")))
+            if "dependencies" in match.groupdict().keys():
+                print("dependencies: %-20s" % (match.group("dependencies")))
+            if "description" in match.groupdict().keys():
+                print("description: %-20s" % (match.group("description")))
+            is_in_target = True
+        elif is_in_target == True:
+            match = re.match(r'^\t(.+)', line)
+            if match:
+                command = match.groups()
+                print("command: %s" % (command))
+            else:
+                is_in_target = False
+else:
+    for line in sys.stdin:
+        match = re.match(r'^([a-zA-Z_-]+):.*?## (.*)$$', line)
+        if match:
+            target, help = match.groups()
+            print("%-20s %s" % (target, help))
+endef
+
+define START_DOCKER_CONTAINER
+if [ `$(DOCKER) inspect -f {{.State.Running}} $(CONTAINER_NAME)` = "false" ] ; then
+        $(DOCKER) start $(CONTAINER_NAME)
+fi
+endef
+
+###########################################################################################################
+## VARIABLES
+###########################################################################################################
+export DOCKER=docker
+export TARGET=
+export PWD=`pwd`
+export PRINT_HELP_PYSCRIPT
+export START_DOCKER_CONTAINER
+export PYTHONPATH=$PYTHONPATH:$(PWD)
+export PROJECT_NAME=rossman_collaborative
+export IMAGE_NAME=$(PROJECT_NAME)-image
+export CONTAINER_NAME=$(PROJECT_NAME)-container
+export DATA_SOURCE=http://files.fast.ai/part2/lesson14/rossmann.tgz 
+export JUPYTER_HOST_PORT=8888
+export JUPYTER_CONTAINER_PORT=8888
+export PYTHON=python3
+export DOCKERFILE=docker/Dockerfile
+
+###########################################################################################################
+## ADD TARGETS SPECIFIC TO "rossman-collaborative"
+###########################################################################################################
+
+
+###########################################################################################################
+## GENERAL TARGETS
+###########################################################################################################
+
+help: ## show this message
+	@$(PYTHON) -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+
+init: init-docker sync-from-source ## initialize repository for traning
+
+sync-from-source: ## download data data source to local envrionment
+	wget $(DATA_SOURCE) -P ./data/
+
+
+init-docker: ## initialize docker image
+	$(DOCKER) build -t $(IMAGE_NAME) -f $(DOCKERFILE) --build-arg UID=$(shell id -u) .
+
+init-docker-no-cache: ## initialize docker image without cachhe
+	$(DOCKER) build --no-cache -t $(IMAGE_NAME) -f $(DOCKERFILE) --build-arg UID=$(shell id -u) .
+
+sync-to-source: ## sync local data to data source
+	echo "no sync target for url data source..."
+
+
+create-container: ## create docker container
+	$(DOCKER) run -it -v $(PWD):/work -p $(JUPYTER_HOST_PORT):$(JUPYTER_CONTAINER_PORT) --name $(CONTAINER_NAME) $(IMAGE_NAME)
+
+start-container: ## start docker container
+	@echo "$$START_DOCKER_CONTAINER" | $(SHELL)
+	@echo "Launched $(CONTAINER_NAME)..."
+	$(DOCKER) attach $(CONTAINER_NAME)
+
+jupyter: ## start Jupyter Notebook server
+	jupyter-notebook --ip=0.0.0.0 --port=${JUPYTER_CONTAINER_PORT}
+
+test: ## run test cases in tests directory
+	$(PYTHON) -m unittest discover
+
+lint: ## check style with flake8
+	flake8 rossman_collaborative
+
+profile: ## show profile of the project
+	@echo "CONTAINER_NAME: $(CONTAINER_NAME)"
+	@echo "IMAGE_NAME: $(IMAGE_NAME)"
+	@echo "JUPYTER_PORT: `$(DOCKER) port $(CONTAINER_NAME)`"
+	@echo "DATA_SOURE: $(DATA_SOURCE)"
+
+clean: clean-model clean-pyc clean-docker ## remove all artifacts
+
+clean-model: ## remove model artifacts
+	rm -fr model/*
+
+clean-pyc: ## remove Python file artifacts
+	find . -name '*.pyc' -exec rm -f {} +
+	find . -name '*.pyo' -exec rm -f {} +
+	find . -name '*~' -exec rm -f {} +
+	find . -name '__pycache__' -exec rm -fr {} +
+
+distclean: clean clean-data ## remove all the reproducible resources including Docker images
+
+clean-data: ## remove files under data
+	rm -fr data/*
+
+clean-docker: clean-container clean-image ## remove Docker image and container
+
+clean-container: ## remove Docker container
+	-$(DOCKER) rm $(CONTAINER_NAME)
+
+clean-image: ## remove Docker image
+	-$(DOCKER) image rm $(IMAGE_NAME)
