@@ -1,8 +1,8 @@
-FROM ubuntu:16.04
+FROM nvidia/cuda:10.1-base-ubuntu18.04
 
 RUN apt-get update && apt-get install -y \
   git \
-  python3.5 \
+  python3.7 \
   python3-pip \
   python3-dev \
   libomp-dev     # xgboost dep

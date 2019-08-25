@@ -110,7 +110,7 @@ profile: ## show profile of the project
 	@echo "JUPYTER_PORT: `$(DOCKER) port $(CONTAINER_NAME)`"
 	@echo "DATA_SOURE: $(DATA_SOURCE)"
 
-clean: clean-model clean-pyc clean-docker ## remove all artifacts
+clean-EVERYTHING: clean-model clean-pyc clean-docker ## remove all artifacts
 
 clean-model: ## remove model artifacts
 	rm -fr model/*
