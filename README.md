@@ -1,6 +1,6 @@
 # rossman-collaborative
 
-Please Input a short description
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cluePrints/rossman-collaborative/master)
 
 ## Requirements
 
